@@ -421,12 +421,15 @@ def bipartite_layout(
 
     if nodes is None:
         top, bottom = nx.bipartite.sets(G)
-        nodes = list(G)
     else:
         top = set(nodes)
         bottom = set(G) - top
-        # Preserves backward-compatible node ordering in returned pos dict
-        nodes = list(top) + list(bottom)
+    # Order both sides by the node order of G: the positions must not depend
+    # on set iteration order (which varies with PYTHONHASHSEED), and every node
+    # has to be placed in the column of the side it belongs to.
+    top = [n for n in G if n in top]
+    bottom = [n for n in G if n in bottom]
+    nodes = top + bottom
 
     left_xs = np.repeat(0, len(top))
     right_xs = np.repeat(width, len(bottom))

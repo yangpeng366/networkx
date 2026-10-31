@@ -604,6 +604,35 @@ def test_bipartite_layout_default_nodes():
         assert all(x == pytest.approx(xs[0]) for x in xs)
 
 
+def test_bipartite_layout_default_nodes_respects_bipartition():
+    # The node order of G need not list one side of the bipartition before the
+    # other one; every node must still be placed in the column of its own side.
+    G = nx.path_graph(4)
+    pos = nx.bipartite_layout(G)
+    xs = [{pos[k][0] for k in nodeset} for nodeset in nx.bipartite.sets(G)]
+    # each side is in a single column ...
+    assert all(len(x) == 1 for x in xs)
+    # ... and the two sides are in different columns
+    assert xs[0] != xs[1]
+
+
+def test_bipartite_layout_positions_follow_graph_order():
+    # The nodes of one side are laid out in the node order of G. Otherwise the
+    # positions depend on set iteration order, which varies with PYTHONHASHSEED.
+    G = nx.Graph()
+    G.add_edges_from(
+        [("x1", "c1"), ("x1", "c2"), ("x2", "c2"), ("x3", "c3"), ("x4", "c3")]
+    )
+    top = ["x1", "x2", "x3", "x4"]
+    pos = nx.bipartite_layout(G, nodes=top)
+    # the given side keeps the node order of G
+    assert [pos[k][1] for k in top] == sorted(pos[k][1] for k in top)
+    # both sides are in their own column
+    assert {pos[k][0] for k in top} == {pos["x1"][0]}
+    assert {pos[k][0] for k in ["c1", "c2", "c3"]} == {pos["c1"][0]}
+    assert pos["x1"][0] != pos["c1"][0]
+
+
 @pytest.mark.parametrize(
     "layout",
     [
